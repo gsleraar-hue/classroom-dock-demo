@@ -156,6 +156,26 @@
   .signal .green{ background:#4FAE64; color:#4FAE64; }
   .signal-label{ font-size:.7rem; color:var(--dock-ink-muted); text-align:center; }
 
+  /* zoeklicht (spotlight) — a presenter overlay no generic screen-tool competitor has,
+     because it only makes sense layered on top of real, already-visible lesson content */
+  .spotlight{
+    position:fixed; inset:0; z-index:calc(var(--z-top) - 1); display:none; cursor:crosshair;
+    background: radial-gradient(circle var(--sr,140px) at var(--sx,50%) var(--sy,50%), transparent 0, transparent calc(var(--sr,140px) - 2px), rgba(6,10,9,.74) var(--sr,140px));
+  }
+  .spotlight.active{ display:block; }
+  .spotlight-pill{
+    position:absolute; top:64px; left:50%; transform:translateX(-50%); white-space:nowrap;
+    display:flex; align-items:center; gap:10px; padding:10px 18px; border-radius:999px;
+    background:rgba(16,30,27,.82); border:1px solid rgba(255,255,255,.18); color:#EAF6F8; font-size:.82rem;
+  }
+
+  /* geluidsmeter — real microphone level instead of a manually-clicked light */
+  .meter-wrap{ width:100%; height:96px; border-radius:10px; background:rgba(255,255,255,.05); border:1px solid var(--panel-border); display:flex; align-items:flex-end; overflow:hidden; }
+  .meter-fill{ width:100%; height:0%; background:#4FAE64; transition:height .08s linear, background-color .2s; }
+  .meter-fill.warn{ background:#E8B93E; }
+  .meter-fill.loud{ background:#D6483F; }
+  .meter-label{ text-align:center; font-family:"IBM Plex Mono",monospace; font-size:.76rem; color:var(--dock-ink-muted); }
+
   @media (prefers-reduced-motion: reduce){ *{ animation-duration:.001ms !important; transition-duration:.001ms !important; } }
 </style>
 </head>
@@ -165,7 +185,7 @@
   <header class="intro">
     <p class="eyebrow">Werkende demo · live LessonUp-les</p>
     <h1>Classroom Dock</h1>
-    <p class="lede">Dit bestand laadt een echte, openbare LessonUp-les via de officiële embed (<code>embed.js</code> + <code>LessonUp.open()</code>) en legt daar het klassikale-tools-dock overheen: timer, zandloper, dobbelstenen, scherm bevriezen, een sleepbaar virtueel doek en groepjes maken. Draai dit lokaal — de sandbox van een gepubliceerde Claude-artifact staat het laden van externe scripts niet toe.</p>
+    <p class="lede">Dit bestand laadt een echte, openbare LessonUp-les via de officiële embed (<code>embed.js</code> + <code>LessonUp.open()</code>) en legt daar het klassikale-tools-dock overheen: timer, zandloper, dobbelstenen, scherm bevriezen, een sleepbaar virtueel doek, groepjes maken, een zoeklicht en een live geluidsmeter. Draai dit lokaal — de sandbox van een gepubliceerde Claude-artifact staat het laden van externe scripts niet toe.</p>
   </header>
 
   <section class="launch-card">
@@ -189,6 +209,8 @@
       <div class="card"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c1.5-4 4.5-6 7-6s5.5 2 7 6"/></svg>Naam kiezer</h3><p>Plak een klassenlijst, klik op kiezen en er flitst willekeurig een naam voorbij.</p></div>
       <div class="card"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="8" y="2" width="8" height="20" rx="4"/></svg>Stoplicht</h3><p>Rood/geel/groen om geluidsniveau of werkvorm aan te geven.</p></div>
       <div class="card"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="7" cy="8" r="2.6"/><circle cx="17" cy="8" r="2.6"/><path d="M3 19c.8-3 2.4-4.5 4-4.5s3.2 1.5 4 4.5"/></svg>Groepjes maken</h3><p>Zelfde klassenlijst als de naam kiezer, eerlijk verdeeld over 2, 3 of 4 groepjes met één klik.</p></div>
+      <div class="card"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></svg>Zoeklicht <span style="font-weight:400; color:var(--accent-strong); font-size:.7rem;">— nieuw</span></h3><p>Dimt alles behalve een cirkel die de muis volgt, recht boven de échte les — precies wijzen zonder iets te bedekken. Scrollen maakt de cirkel groter of kleiner. Geen enkele concurrent kan dit, want zij tonen geen echte lesinhoud.</p></div>
+      <div class="card"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v10"/><path d="M8 6c-3 2-3 8 4 8s7-6 4-8"/></svg>Geluidsmeter <span style="font-weight:400; color:var(--accent-strong); font-size:.7rem;">— nieuw</span></h3><p>Meet het écht geluidsniveau via de microfoon in plaats van een handmatig aangeklikt stoplicht — niets wordt opgenomen of verstuurd, alleen live gemeten.</p></div>
     </div>
   </section>
 
@@ -203,6 +225,9 @@
   </div>
 </div>
 <div class="curtain" id="curtain"><div class="curtain-handle" id="curtainHandle"><div class="rod"></div></div></div>
+<div class="spotlight" id="spotlight">
+  <div class="spotlight-pill">🔦 Zoeklicht actief — beweeg de muis, scroll om te vergroten/verkleinen, klik nogmaals op <strong>Zoeklicht</strong> om te stoppen</div>
+</div>
 
 <div class="dock-tab" id="dockTab">⌄ Tools</div>
 <div class="dock" id="dock">
@@ -214,6 +239,8 @@
   <button type="button" data-tool="naam" title="Naam kiezen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c1.5-4 4.5-6 7-6s5.5 2 7 6"/><path d="M17 4l3 1.6L17 7.2"/><path d="M20 5.6h-6"/></svg>Naam</button>
   <button type="button" data-tool="groepjes" title="Groepjes maken"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="7" cy="8" r="2.6"/><circle cx="17" cy="8" r="2.6"/><path d="M3 19c.8-3 2.4-4.5 4-4.5s3.2 1.5 4 4.5"/><path d="M13 19c.8-3 2.4-4.5 4-4.5s3.2 1.5 4 4.5"/></svg>Groepen</button>
   <button type="button" data-tool="stoplicht" title="Stoplicht"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="8" y="2" width="8" height="20" rx="4"/><circle cx="12" cy="7" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="17" r="1.6" fill="currentColor" stroke="none"/></svg>Stoplicht</button>
+  <button type="button" data-tool="zoeklicht" title="Zoeklicht"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></svg>Zoeklicht</button>
+  <button type="button" data-tool="geluid" title="Geluidsmeter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v10"/><path d="M8 6c-3 2-3 8 4 8s7-6 4-8"/></svg>Geluid</button>
 </div>
 
 <div class="tool-panel" id="panel-timer" style="top:66px; left:16px;">
@@ -319,6 +346,16 @@ Bram</textarea>
   </div>
 </div>
 
+<div class="tool-panel" id="panel-geluid" style="top:300px; right:16px;">
+  <div class="panel-head">Geluidsmeter<button class="panel-close" data-close="geluid">✕</button></div>
+  <div class="panel-body">
+    <p style="margin:0; font-size:.76rem; color:var(--dock-ink-muted);">Meet het echte geluidsniveau via de microfoon. Er wordt niets opgenomen of verstuurd — alleen het volume wordt live afgelezen.</p>
+    <div class="meter-wrap"><div class="meter-fill" id="meterFill"></div></div>
+    <div class="meter-label" id="meterLabel">Nog niet actief</div>
+    <div class="row"><button class="pbtn primary" id="meterToggle">Start meten</button></div>
+  </div>
+</div>
+
 <script>
 (function(){
   "use strict";
@@ -376,8 +413,11 @@ Bram</textarea>
 
   /* ---------- panels wired to dock buttons ---------- */
   var panels = {};
-  ['timer','zandloper','dobbelstenen','doek','naam','groepjes','stoplicht'].forEach(function(id){ panels[id] = document.getElementById('panel-' + id); });
+  ['timer','zandloper','dobbelstenen','doek','naam','groepjes','stoplicht','geluid'].forEach(function(id){ panels[id] = document.getElementById('panel-' + id); });
   var freezeOn = false;
+  var spotlightOn = false;
+  var spotlightEl = document.getElementById('spotlight');
+  var spotlightRadius = 140;
 
   document.querySelectorAll('.dock button').forEach(function(btn){
     btn.addEventListener('click', function(){
@@ -386,6 +426,12 @@ Bram</textarea>
         freezeOn = !freezeOn;
         btn.classList.toggle('is-active', freezeOn);
         document.getElementById('freezeBadge').classList.toggle('active', freezeOn);
+        return;
+      }
+      if(tool === 'zoeklicht'){
+        spotlightOn = !spotlightOn;
+        btn.classList.toggle('is-active', spotlightOn);
+        spotlightEl.classList.toggle('active', spotlightOn);
         return;
       }
       var panel = panels[tool];
@@ -592,6 +638,72 @@ Bram</textarea>
         g.map(function(name){ return '<div class="group-name">' + escapeHtml(name) + '</div>'; }).join('') +
         '</div>';
     }).join('');
+  });
+
+  /* ---------- zoeklicht (spotlight) ---------- */
+  spotlightEl.style.setProperty('--sr', spotlightRadius + 'px');
+  document.addEventListener('pointermove', function(e){
+    if(!spotlightOn) return;
+    spotlightEl.style.setProperty('--sx', e.clientX + 'px');
+    spotlightEl.style.setProperty('--sy', e.clientY + 'px');
+  });
+  spotlightEl.addEventListener('wheel', function(e){
+    e.preventDefault();
+    spotlightRadius = Math.max(50, Math.min(500, spotlightRadius - e.deltaY * 0.4));
+    spotlightEl.style.setProperty('--sr', spotlightRadius + 'px');
+  }, { passive: false });
+
+  /* ---------- geluidsmeter (echte microfoon i.p.v. handmatig stoplicht) ---------- */
+  var meterToggle = document.getElementById('meterToggle');
+  var meterFill = document.getElementById('meterFill');
+  var meterLabel = document.getElementById('meterLabel');
+  var meterStream = null, meterAudioCtx = null, meterAnalyser = null, meterRaf = null, meterOn = false;
+
+  function stopMeter(){
+    meterOn = false;
+    if(meterRaf) cancelAnimationFrame(meterRaf);
+    if(meterStream){ meterStream.getTracks().forEach(function(t){ t.stop(); }); meterStream = null; }
+    if(meterAudioCtx){ meterAudioCtx.close(); meterAudioCtx = null; }
+    meterFill.style.height = '0%';
+    meterFill.className = 'meter-fill';
+    meterLabel.textContent = 'Nog niet actief';
+    meterToggle.textContent = 'Start meten';
+  }
+
+  function meterTick(){
+    if(!meterOn) return;
+    var data = new Uint8Array(meterAnalyser.fftSize);
+    meterAnalyser.getByteTimeDomainData(data);
+    var sumSq = 0;
+    for(var i = 0; i < data.length; i++){ var v = (data[i] - 128) / 128; sumSq += v * v; }
+    var rms = Math.sqrt(sumSq / data.length);
+    var pct = Math.min(100, Math.round(rms * 260));
+    meterFill.style.height = pct + '%';
+    meterFill.className = 'meter-fill' + (pct > 66 ? ' loud' : pct > 30 ? ' warn' : '');
+    meterLabel.textContent = pct > 66 ? 'Luid' : pct > 30 ? 'Gemiddeld' : 'Stil';
+    meterRaf = requestAnimationFrame(meterTick);
+  }
+
+  meterToggle.addEventListener('click', function(){
+    if(meterOn){ stopMeter(); return; }
+    if(!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)){
+      meterLabel.textContent = 'Microfoon niet beschikbaar in deze browser';
+      return;
+    }
+    meterLabel.textContent = 'Microfoon toegang vragen…';
+    navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(function(stream){
+      meterStream = stream;
+      meterAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      var source = meterAudioCtx.createMediaStreamSource(stream);
+      meterAnalyser = meterAudioCtx.createAnalyser();
+      meterAnalyser.fftSize = 1024;
+      source.connect(meterAnalyser);
+      meterOn = true;
+      meterToggle.textContent = 'Stop meten';
+      meterTick();
+    }).catch(function(){
+      meterLabel.textContent = 'Geen toegang tot de microfoon';
+    });
   });
 })();
 </script>
