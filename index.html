@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Classroom Dock — live les</title>
+<script src="https://www.lessonup.com/embed.js"></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+  :root{
+    --bg:#F3ECDC; --surface:#FFFDF8; --surface-2:#EAE0C8; --ink:#241C15; --ink-muted:#6E6152;
+    --border:#DBCBA6; --accent:#A6672A; --accent-strong:#8A5220; --accent-ink:#FFF8ED; --curtain-ink:#7C2233;
+    --shadow: 0 12px 32px -16px rgba(36,28,21,.35);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#1B1710; --surface:#241F18; --surface-2:#2E281E; --ink:#F3E9D6; --ink-muted:#BDAD90;
+      --border:#3C3324; --accent:#E8A945; --accent-strong:#F2BE6C; --accent-ink:#241C15; --curtain-ink:#E58A9B;
+      --shadow: 0 12px 32px -16px rgba(0,0,0,.6);
+    }
+  }
+  :root{
+    --dock-surface:#1E2E29; --dock-ink:#F2ECDD; --dock-ink-muted:#9FB3AC; --dock-accent:#F0B23E; --dock-accent-ink:#1B140A;
+    --panel-surface:#22332D; --panel-border:#3B4E44; --curtain-a:#7C2233; --curtain-b:#54151F;
+    --curtain-rod:#D9A24B; --dice-body:#F2ECDD; --dice-pip:#241C15;
+    --z-top: 2147483000;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"IBM Plex Sans", ui-sans-serif, system-ui, sans-serif; line-height:1.55;
+  }
+  h1,h2,h3{ font-family:"Fraunces", Georgia, serif; text-wrap:balance; margin:0; }
+  .mono{ font-family:"IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  a{ color:var(--accent-strong); }
+  :focus-visible{ outline:2px solid var(--accent); outline-offset:2px; border-radius:4px; }
+  .page{ max-width:980px; margin:0 auto; padding:56px 24px 88px; }
+  .eyebrow{ font-family:"IBM Plex Mono", monospace; font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; color:var(--accent-strong); margin:0 0 12px; }
+  header.intro h1{ font-size:clamp(2rem, 4.2vw, 2.75rem); font-weight:700; }
+  header.intro .lede{ max-width:64ch; color:var(--ink-muted); font-size:1.05rem; margin-top:14px; }
+
+  .launch-card{
+    margin-top:36px; padding:22px 24px; border-radius:16px; background:var(--surface); border:1px solid var(--border);
+    box-shadow:var(--shadow); display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+  }
+  .launch-card .meta{ flex:1; min-width:220px; }
+  .launch-card .meta .label{ font-family:"IBM Plex Mono",monospace; font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-muted); }
+  .launch-card .meta .id{ font-family:"IBM Plex Mono",monospace; font-size:.95rem; margin-top:4px; }
+  .status-dot{ display:inline-block; width:8px; height:8px; border-radius:50%; background:#C7B78A; margin-right:6px; }
+  .status-dot.ready{ background:#3F8F52; }
+  .btn{ font:inherit; font-size:.85rem; padding:10px 18px; border-radius:10px; border:1px solid var(--border); background:var(--surface-2); color:var(--ink); cursor:pointer; }
+  .btn:hover{ filter:brightness(0.97); }
+  .btn.primary{ background:var(--accent); color:var(--accent-ink); border-color:transparent; font-weight:600; }
+  .btn.primary:hover{ background:var(--accent-strong); }
+  .btn:disabled{ opacity:.5; cursor:not-allowed; }
+  .btn.small{ font-size:.74rem; padding:6px 10px; border-radius:8px; }
+
+  .section{ margin-top:64px; }
+  .section h2{ font-size:1.55rem; font-weight:700; }
+  .section .sub{ color:var(--ink-muted); max-width:64ch; margin-top:8px; }
+  .cards{ display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:14px; margin-top:24px; }
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; box-shadow:var(--shadow); }
+  .card h3{ font-size:1rem; font-weight:600; display:flex; align-items:center; gap:8px; }
+  .card h3 svg{ width:18px; height:18px; color:var(--accent-strong); flex:none; }
+  .card p{ color:var(--ink-muted); font-size:.88rem; margin:8px 0 0; }
+  footer{ margin-top:64px; padding-top:20px; border-top:1px solid var(--border); color:var(--ink-muted); font-size:.82rem; }
+
+  /* ---------- fixed overlay layer (sits above the real LessonUp embed) ---------- */
+  .freeze-badge{
+    position:fixed; inset:0; z-index:calc(var(--z-top) - 2); display:flex; align-items:center; justify-content:center;
+    opacity:0; pointer-events:none; transition:opacity .35s ease;
+    -webkit-backdrop-filter: blur(8px) saturate(.75); backdrop-filter: blur(8px) saturate(.75);
+    background: rgba(10,16,15,.18);
+  }
+  .freeze-badge.active{ opacity:1; pointer-events:auto; }
+  .freeze-pill{
+    display:flex; align-items:center; gap:10px; padding:12px 20px; border-radius:999px;
+    background:rgba(16,30,27,.82); border:1px solid rgba(255,255,255,.18); color:#EAF6F8; font-size:.88rem;
+  }
+  .curtain{
+    position:fixed; left:0; right:0; bottom:0; height:0%; z-index:calc(var(--z-top) - 1);
+    background:
+      repeating-linear-gradient(90deg, var(--curtain-a) 0 34px, var(--curtain-b) 34px 68px),
+      linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,0) 18%);
+    box-shadow: 0 -14px 26px -12px rgba(0,0,0,.55) inset;
+  }
+  .curtain-handle{ position:absolute; left:0; right:0; top:0; height:26px; margin-top:-13px; display:flex; align-items:center; justify-content:center; cursor:ns-resize; touch-action:none; }
+  .curtain-handle .rod{ width:min(94%,700px); height:9px; border-radius:4px; background:linear-gradient(180deg,var(--curtain-rod),#8C6320); box-shadow:0 2px 6px rgba(0,0,0,.4); display:flex; align-items:center; justify-content:center; }
+  .curtain-handle .rod::after{ content:"⋮⋮⋮"; letter-spacing:3px; color:#5B3E12; font-size:.62rem; }
+
+  .dock-tab{
+    position:fixed; top:0; left:50%; transform:translateX(-50%); z-index:var(--z-top);
+    background:var(--dock-surface); color:var(--dock-ink); border:1px solid var(--panel-border); border-top:none;
+    padding:6px 18px 7px; border-radius:0 0 12px 12px; font-family:"IBM Plex Mono",monospace; font-size:.72rem;
+    letter-spacing:.08em; text-transform:uppercase; cursor:pointer; display:flex; align-items:center; gap:6px;
+  }
+  .dock-tab:hover{ color:var(--dock-accent); }
+  .dock{
+    position:fixed; top:0; left:50%; transform:translate(-50%,-110%); z-index:calc(var(--z-top) - 1);
+    display:flex; gap:6px; padding:10px; border-radius:14px;
+    background:var(--dock-surface); border:1px solid var(--panel-border); box-shadow:0 16px 30px -14px rgba(0,0,0,.6);
+    transition: transform .32s cubic-bezier(.2,.8,.2,1);
+  }
+  .dock.open{ transform:translate(-50%,14px); }
+  .dock button{
+    display:flex; flex-direction:column; align-items:center; gap:4px; width:64px; padding:8px 4px 7px;
+    border-radius:10px; border:1px solid transparent; background:transparent; color:var(--dock-ink-muted);
+    font-family:"IBM Plex Sans",sans-serif; font-size:.62rem; cursor:pointer; letter-spacing:.01em;
+  }
+  .dock button svg{ width:20px; height:20px; }
+  .dock button:hover{ background:rgba(255,255,255,.06); color:var(--dock-ink); }
+  .dock button.is-active{ background:var(--dock-accent); color:var(--dock-accent-ink); border-color:transparent; }
+  .dock button.is-active svg{ color:var(--dock-accent-ink); }
+
+  .tool-panel{
+    position:fixed; z-index:calc(var(--z-top) - 1); width:236px; border-radius:14px; overflow:hidden;
+    background:var(--panel-surface); border:1px solid var(--panel-border); color:var(--dock-ink);
+    box-shadow:0 20px 36px -16px rgba(0,0,0,.6); display:none;
+  }
+  .tool-panel.open{ display:block; }
+  .panel-head{ display:flex; align-items:center; justify-content:space-between; padding:9px 8px 9px 12px; cursor:grab; background:rgba(255,255,255,.03); border-bottom:1px solid var(--panel-border); font-size:.78rem; font-weight:600; user-select:none; touch-action:none; }
+  .panel-head:active{ cursor:grabbing; }
+  .panel-close{ width:22px; height:22px; border-radius:6px; border:none; background:transparent; color:var(--dock-ink-muted); cursor:pointer; font-size:.9rem; line-height:1; }
+  .panel-close:hover{ background:rgba(255,255,255,.08); color:var(--dock-ink); }
+  .panel-body{ padding:14px; display:flex; flex-direction:column; gap:12px; }
+  .row{ display:flex; gap:6px; flex-wrap:wrap; justify-content:center; }
+  .pbtn{ font:inherit; font-size:.74rem; padding:6px 10px; border-radius:8px; border:1px solid var(--panel-border); background:rgba(255,255,255,.04); color:var(--dock-ink); cursor:pointer; }
+  .pbtn:hover{ background:rgba(255,255,255,.09); }
+  .pbtn.primary{ background:var(--dock-accent); color:var(--dock-accent-ink); border-color:transparent; font-weight:600; }
+
+  .ring-wrap{ position:relative; width:120px; height:120px; margin:0 auto; }
+  .ring-wrap svg{ width:100%; height:100%; transform:rotate(-90deg); }
+  .ring-bg{ fill:none; stroke:rgba(255,255,255,.1); stroke-width:8; }
+  .ring-fg{ fill:none; stroke:var(--dock-accent); stroke-width:8; stroke-linecap:round; transition:stroke-dashoffset .25s linear; }
+  .ring-time{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:"IBM Plex Mono",monospace; font-size:1.15rem; font-weight:600; }
+  .glass-wrap{ display:flex; justify-content:center; }
+  .glass-wrap svg{ width:96px; height:120px; }
+  .dice-row{ display:flex; gap:10px; justify-content:center; }
+  .die{ width:56px; height:56px; border-radius:12px; background:var(--dice-body); box-shadow:0 6px 12px rgba(0,0,0,.35); transition:transform .12s; }
+  .die.is-rolling{ animation:roll .12s linear infinite; }
+  @keyframes roll{ 0%{ transform:rotate(-6deg) scale(1.02);} 50%{ transform:rotate(6deg) scale(.98);} 100%{ transform:rotate(-6deg) scale(1.02);} }
+  .dice-sum{ text-align:center; font-family:"IBM Plex Mono",monospace; font-size:.78rem; color:var(--dock-ink-muted); }
+  .reveal-readout{ font-family:"IBM Plex Mono",monospace; font-size:.78rem; color:var(--dock-ink-muted); text-align:center; }
+  textarea.names{ width:100%; min-height:64px; resize:vertical; background:rgba(255,255,255,.04); border:1px solid var(--panel-border); color:var(--dock-ink); border-radius:8px; padding:8px; font:inherit; font-size:.78rem; }
+  .name-result{ text-align:center; font-family:"Fraunces",serif; font-weight:600; font-size:1.15rem; min-height:1.6em; }
+  .tool-panel.wide{ width:308px; }
+  .groups-grid{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center; max-height:180px; overflow-y:auto; }
+  .group-card{ background:rgba(255,255,255,.05); border:1px solid var(--panel-border); border-radius:8px; padding:8px 10px; min-width:76px; }
+  .group-title{ font-family:"IBM Plex Mono",monospace; font-size:.66rem; letter-spacing:.05em; text-transform:uppercase; color:var(--dock-accent); margin-bottom:4px; }
+  .group-name{ font-size:.76rem; padding:1px 0; }
+  .signal{ display:flex; flex-direction:column; gap:8px; align-items:center; background:rgba(0,0,0,.25); padding:10px; border-radius:12px; }
+  .signal button{ width:38px; height:38px; border-radius:50%; border:2px solid rgba(255,255,255,.15); cursor:pointer; opacity:.35; }
+  .signal button.active{ opacity:1; box-shadow:0 0 14px 2px currentColor; }
+  .signal .red{ background:#D6483F; color:#D6483F; }
+  .signal .yellow{ background:#E8B93E; color:#E8B93E; }
+  .signal .green{ background:#4FAE64; color:#4FAE64; }
+  .signal-label{ font-size:.7rem; color:var(--dock-ink-muted); text-align:center; }
+
+  @media (prefers-reduced-motion: reduce){ *{ animation-duration:.001ms !important; transition-duration:.001ms !important; } }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <header class="intro">
+    <p class="eyebrow">Werkende demo · live LessonUp-les</p>
+    <h1>Classroom Dock</h1>
+    <p class="lede">Dit bestand laadt een echte, openbare LessonUp-les via de officiële embed (<code>embed.js</code> + <code>LessonUp.open()</code>) en legt daar het klassikale-tools-dock overheen: timer, zandloper, dobbelstenen, scherm bevriezen, een sleepbaar virtueel doek en groepjes maken. Draai dit lokaal — de sandbox van een gepubliceerde Claude-artifact staat het laden van externe scripts niet toe.</p>
+  </header>
+
+  <section class="launch-card">
+    <div class="meta">
+      <div class="label"><span class="status-dot" id="statusDot"></span><span id="statusText">Embed script laden…</span></div>
+      <div class="id">Les-ID: fdhqgKyenPd8JWLGr</div>
+    </div>
+    <button class="btn primary" id="loadLessonBtn" disabled>Les laden</button>
+    <button class="btn small" id="closeLessonBtn" style="display:none;">Les sluiten</button>
+  </section>
+
+  <section class="section">
+    <h2>Hoe elke tool werkt</h2>
+    <p class="sub">Het dock staat vast bovenaan het venster (klik op <strong>Tools</strong>) en blijft zichtbaar over de geladen les heen, ook terwijl je presenteert.</p>
+    <div class="cards">
+      <div class="card"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2"/></svg>Timer</h3><p>Digitale countdown met voortgangsring, presets en een geluidssignaal bij nul.</p></div>
+      <div class="card"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 3h12"/><path d="M6 21h12"/><path d="M6 3c0 5 5 6.5 6 9-1 2.5-6 4-6 9"/></svg>Zandloper</h3><p>Dezelfde countdown, maar visueel: zand stroomt zichtbaar van boven naar beneden.</p></div>
+      <div class="card"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>Dobbelstenen</h3><p>Eén of twee dobbelstenen met een korte rolanimatie en een écht willekeurige uitkomst.</p></div>
+      <div class="card"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="12" y1="2" x2="12" y2="22"/><line x1="4.5" y1="6" x2="19.5" y2="18"/></svg>Scherm bevriezen</h3><p>Vervaagt en vergrendelt alles eronder — ook de echte les — zodat leerlingen niet kunnen doorklikken.</p></div>
+      <div class="card"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 4h16"/><path d="M7 20c2-2 8-2 10 0"/></svg>Virtueel doek</h3><p>Een doek bedekt het scherm vanaf de onderkant; sleep de roede omhoog of laat het automatisch langzaam verdwijnen.</p></div>
+      <div class="card"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c1.5-4 4.5-6 7-6s5.5 2 7 6"/></svg>Naam kiezer</h3><p>Plak een klassenlijst, klik op kiezen en er flitst willekeurig een naam voorbij.</p></div>
+      <div class="card"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="8" y="2" width="8" height="20" rx="4"/></svg>Stoplicht</h3><p>Rood/geel/groen om geluidsniveau of werkvorm aan te geven.</p></div>
+      <div class="card"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="7" cy="8" r="2.6"/><circle cx="17" cy="8" r="2.6"/><path d="M3 19c.8-3 2.4-4.5 4-4.5s3.2 1.5 4 4.5"/></svg>Groepjes maken</h3><p>Zelfde klassenlijst als de naam kiezer, eerlijk verdeeld over 2, 3 of 4 groepjes met één klik.</p></div>
+    </div>
+  </section>
+
+  <footer>Lokale demo · embed.js en de lesinhoud komen live van lessonup.com; alle tools zelf zijn client-side en gebruiken geen externe diensten.</footer>
+</div>
+
+<!-- fixed overlay layer -->
+<div class="freeze-badge" id="freezeBadge">
+  <div class="freeze-pill">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6"><line x1="12" y1="2" x2="12" y2="22"/><line x1="4.5" y1="6" x2="19.5" y2="18"/><line x1="19.5" y1="6" x2="4.5" y2="18"/></svg>
+    <span>Scherm bevroren — klik nogmaals op <strong>Bevriezen</strong> in het dock om te hervatten</span>
+  </div>
+</div>
+<div class="curtain" id="curtain"><div class="curtain-handle" id="curtainHandle"><div class="rod"></div></div></div>
+
+<div class="dock-tab" id="dockTab">⌄ Tools</div>
+<div class="dock" id="dock">
+  <button type="button" data-tool="timer" title="Timer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2"/><path d="M9 2h6"/><path d="M12 2v2"/></svg>Timer</button>
+  <button type="button" data-tool="zandloper" title="Zandloper"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 3h12"/><path d="M6 21h12"/><path d="M6 3c0 5 5 6.5 6 9-1 2.5-6 4-6 9"/><path d="M18 3c0 5-5 6.5-6 9 1 2.5 6 4 6 9"/></svg>Zandloper</button>
+  <button type="button" data-tool="dobbelstenen" title="Dobbelstenen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/><circle cx="7" cy="7" r="1" fill="currentColor" stroke="none"/><circle cx="17" cy="17" r="1" fill="currentColor" stroke="none"/><circle cx="15" cy="19" r="1" fill="currentColor" stroke="none"/><circle cx="19" cy="15" r="1" fill="currentColor" stroke="none"/></svg>Dobbelen</button>
+  <button type="button" data-tool="bevriezen" title="Scherm bevriezen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="12" y1="2" x2="12" y2="22"/><line x1="4.5" y1="6" x2="19.5" y2="18"/><line x1="19.5" y1="6" x2="4.5" y2="18"/></svg>Bevriezen</button>
+  <button type="button" data-tool="doek" title="Virtueel doek"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 4h16"/><path d="M4 4c1 6 3 8 3 16"/><path d="M20 4c-1 6-3 8-3 16"/><path d="M7 20c2-2 8-2 10 0"/></svg>Doek</button>
+  <button type="button" data-tool="naam" title="Naam kiezen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c1.5-4 4.5-6 7-6s5.5 2 7 6"/><path d="M17 4l3 1.6L17 7.2"/><path d="M20 5.6h-6"/></svg>Naam</button>
+  <button type="button" data-tool="groepjes" title="Groepjes maken"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="7" cy="8" r="2.6"/><circle cx="17" cy="8" r="2.6"/><path d="M3 19c.8-3 2.4-4.5 4-4.5s3.2 1.5 4 4.5"/><path d="M13 19c.8-3 2.4-4.5 4-4.5s3.2 1.5 4 4.5"/></svg>Groepen</button>
+  <button type="button" data-tool="stoplicht" title="Stoplicht"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="8" y="2" width="8" height="20" rx="4"/><circle cx="12" cy="7" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="17" r="1.6" fill="currentColor" stroke="none"/></svg>Stoplicht</button>
+</div>
+
+<div class="tool-panel" id="panel-timer" style="top:66px; left:16px;">
+  <div class="panel-head">Timer<button class="panel-close" data-close="timer">✕</button></div>
+  <div class="panel-body">
+    <div class="ring-wrap">
+      <svg viewBox="0 0 120 120"><circle class="ring-bg" cx="60" cy="60" r="52"/><circle class="ring-fg" id="timerRing" cx="60" cy="60" r="52" stroke-dasharray="326.7" stroke-dashoffset="0"/></svg>
+      <div class="ring-time mono" id="timerReadout">03:00</div>
+    </div>
+    <div class="row"><button class="pbtn" data-preset-timer="60">1m</button><button class="pbtn" data-preset-timer="180">3m</button><button class="pbtn" data-preset-timer="300">5m</button><button class="pbtn" data-preset-timer="600">10m</button></div>
+    <div class="row"><button class="pbtn primary" id="timerStart">Start</button><button class="pbtn" id="timerReset">Reset</button></div>
+  </div>
+</div>
+
+<div class="tool-panel" id="panel-zandloper" style="top:66px; left:112px;">
+  <div class="panel-head">Zandloper<button class="panel-close" data-close="zandloper">✕</button></div>
+  <div class="panel-body">
+    <div class="glass-wrap">
+      <svg viewBox="0 0 96 120">
+        <defs>
+          <clipPath id="topBulb"><path d="M14 6 h68 v10 c0 20 -30 30 -34 40 -4 -10 -34 -20 -34 -40 z"/></clipPath>
+          <clipPath id="bottomBulb"><path d="M14 114 h68 v-10 c0 -20 -30 -30 -34 -40 -4 10 -34 20 -34 40 z"/></clipPath>
+        </defs>
+        <path d="M14 6 h68 v10 c0 20 -30 30 -34 40 -4 -10 -34 -20 -34 -40 z" fill="none" stroke="var(--dock-accent)" stroke-width="2.5"/>
+        <path d="M14 114 h68 v-10 c0 -20 -30 -30 -34 -40 -4 10 -34 20 -34 40 z" fill="none" stroke="var(--dock-accent)" stroke-width="2.5"/>
+        <rect x="10" y="2" width="76" height="6" rx="2" fill="var(--curtain-rod)"/>
+        <rect x="10" y="112" width="76" height="6" rx="2" fill="var(--curtain-rod)"/>
+        <g clip-path="url(#topBulb)"><rect id="sandTop" x="10" y="6" width="76" height="50" fill="#E4C77B"/></g>
+        <g clip-path="url(#bottomBulb)"><rect id="sandBottom" x="10" y="70" width="76" height="0" fill="#E4C77B"/></g>
+      </svg>
+    </div>
+    <div class="reveal-readout" id="glassReadout">03:00</div>
+    <div class="row"><button class="pbtn" data-preset-glass="60">1m</button><button class="pbtn" data-preset-glass="180">3m</button><button class="pbtn" data-preset-glass="300">5m</button><button class="pbtn" data-preset-glass="600">10m</button></div>
+    <div class="row"><button class="pbtn primary" id="glassStart">Start</button><button class="pbtn" id="glassReset">Reset</button></div>
+  </div>
+</div>
+
+<div class="tool-panel" id="panel-dobbelstenen" style="top:66px; right:112px;">
+  <div class="panel-head">Dobbelstenen<button class="panel-close" data-close="dobbelstenen">✕</button></div>
+  <div class="panel-body">
+    <div class="dice-row" id="diceRow"><svg class="die" id="die1" viewBox="0 0 60 60"></svg><svg class="die" id="die2" viewBox="0 0 60 60" style="display:none;"></svg></div>
+    <div class="dice-sum" id="diceSum"></div>
+    <div class="row"><button class="pbtn" id="diceOne">1 dobbelsteen</button><button class="pbtn" id="diceTwo">2 dobbelstenen</button></div>
+    <div class="row"><button class="pbtn primary" id="diceRoll">Gooien</button></div>
+  </div>
+</div>
+
+<div class="tool-panel" id="panel-doek" style="top:66px; right:16px;">
+  <div class="panel-head">Virtueel doek<button class="panel-close" data-close="doek">✕</button></div>
+  <div class="panel-body">
+    <p style="margin:0; font-size:.78rem; color:var(--dock-ink-muted);">Sleep de roede op het doek, of gebruik de knoppen.</p>
+    <div class="reveal-readout" id="curtainReadout">Onthuld: 0%</div>
+    <div class="row"><button class="pbtn" id="curtainClose">Doek laten zakken</button><button class="pbtn primary" id="curtainReveal">Langzaam onthullen</button></div>
+  </div>
+</div>
+
+<div class="tool-panel" id="panel-naam" style="top:180px; left:16px;">
+  <div class="panel-head">Naam kiezen<button class="panel-close" data-close="naam">✕</button></div>
+  <div class="panel-body">
+    <textarea class="names" id="namesInput">Sanne
+Milan
+Fenna
+Youssef
+Noor
+Daan
+Lotte
+Bram</textarea>
+    <div class="name-result" id="nameResult">—</div>
+    <div class="row"><button class="pbtn primary" id="namePick">Kies willekeurig</button></div>
+  </div>
+</div>
+
+<div class="tool-panel" id="panel-stoplicht" style="top:180px; right:16px;">
+  <div class="panel-head">Stoplicht<button class="panel-close" data-close="stoplicht">✕</button></div>
+  <div class="panel-body">
+    <div class="signal">
+      <button class="red" data-signal="Stil" title="Stil"></button>
+      <button class="yellow" data-signal="Fluisteren" title="Fluisteren"></button>
+      <button class="green" data-signal="Overleg" title="Overleg"></button>
+    </div>
+    <div class="signal-label" id="signalLabel">Klik een kleur om het geluidsniveau aan te geven</div>
+  </div>
+</div>
+
+<div class="tool-panel wide" id="panel-groepjes" style="top:300px; left:50%; transform:translateX(-50%);">
+  <div class="panel-head">Groepjes maken<button class="panel-close" data-close="groepjes">✕</button></div>
+  <div class="panel-body">
+    <textarea class="names" id="groupNamesInput">Sanne
+Milan
+Fenna
+Youssef
+Noor
+Daan
+Lotte
+Bram</textarea>
+    <div class="row">
+      <button class="pbtn" data-group-count="2">2 groepen</button>
+      <button class="pbtn" data-group-count="3">3 groepen</button>
+      <button class="pbtn" data-group-count="4">4 groepen</button>
+    </div>
+    <div class="row"><button class="pbtn primary" id="groupsMake">Verdeel in groepjes</button></div>
+    <div class="groups-grid" id="groupsResult"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var LESSON_ID = 'fdhqgKyenPd8JWLGr';
+
+  /* ---------- wait for the LessonUp embed script, then enable the launch button ---------- */
+  var statusDot = document.getElementById('statusDot');
+  var statusText = document.getElementById('statusText');
+  var loadBtn = document.getElementById('loadLessonBtn');
+  var closeBtn = document.getElementById('closeLessonBtn');
+  var tries = 0;
+  (function waitForEmbed(){
+    tries++;
+    if(window.LessonUp && typeof window.LessonUp.open === 'function'){
+      statusDot.classList.add('ready');
+      statusText.textContent = 'Klaar om te laden';
+      loadBtn.disabled = false;
+      return;
+    }
+    if(tries > 100){ statusText.textContent = 'Embed script niet bereikbaar (geen internetverbinding?)'; return; }
+    setTimeout(waitForEmbed, 100);
+  })();
+
+  loadBtn.addEventListener('click', function(){
+    if(!(window.LessonUp && typeof window.LessonUp.open === 'function')) return;
+    window.LessonUp.open(LESSON_ID);
+    closeBtn.style.display = '';
+  });
+  closeBtn.addEventListener('click', function(){
+    if(window.LessonUp && typeof window.LessonUp.close === 'function'){ window.LessonUp.close(); }
+    closeBtn.style.display = 'none';
+  });
+
+  /* ---------- dock open/close ---------- */
+  var dock = document.getElementById('dock');
+  document.getElementById('dockTab').addEventListener('click', function(){ dock.classList.toggle('open'); });
+
+  /* ---------- audio beep ---------- */
+  var audioCtx = null;
+  function beep(){
+    try{
+      if(!audioCtx){ audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+      if(audioCtx.state === 'suspended'){ audioCtx.resume(); }
+      var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = 'sine'; o.frequency.value = 880;
+      o.connect(g); g.connect(audioCtx.destination);
+      var t = audioCtx.currentTime;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.22, t + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+      o.start(t); o.stop(t + 0.55);
+    }catch(e){}
+  }
+
+  /* ---------- panels wired to dock buttons ---------- */
+  var panels = {};
+  ['timer','zandloper','dobbelstenen','doek','naam','groepjes','stoplicht'].forEach(function(id){ panels[id] = document.getElementById('panel-' + id); });
+  var freezeOn = false;
+
+  document.querySelectorAll('.dock button').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var tool = btn.getAttribute('data-tool');
+      if(tool === 'bevriezen'){
+        freezeOn = !freezeOn;
+        btn.classList.toggle('is-active', freezeOn);
+        document.getElementById('freezeBadge').classList.toggle('active', freezeOn);
+        return;
+      }
+      var panel = panels[tool];
+      if(!panel) return;
+      var willOpen = !panel.classList.contains('open');
+      panel.classList.toggle('open', willOpen);
+      btn.classList.toggle('is-active', willOpen);
+    });
+  });
+  document.querySelectorAll('.panel-close').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var tool = btn.getAttribute('data-close');
+      panels[tool].classList.remove('open');
+      var dockBtn = document.querySelector('.dock button[data-tool="' + tool + '"]');
+      if(dockBtn) dockBtn.classList.remove('is-active');
+    });
+  });
+
+  /* ---------- draggable panels (clamped to viewport) ---------- */
+  function makeDraggable(panel){
+    var head = panel.querySelector('.panel-head');
+    var offX = 0, offY = 0, dragging = false;
+    head.addEventListener('pointerdown', function(e){
+      if(e.target.closest('.panel-close')) return;
+      dragging = true;
+      panel.style.transform = 'none';
+      var pr = panel.getBoundingClientRect();
+      offX = e.clientX - pr.left; offY = e.clientY - pr.top;
+      panel.style.right = 'auto';
+      head.setPointerCapture(e.pointerId);
+    });
+    head.addEventListener('pointermove', function(e){
+      if(!dragging) return;
+      var x = e.clientX - offX, y = e.clientY - offY;
+      x = Math.max(4, Math.min(x, window.innerWidth - panel.offsetWidth - 4));
+      y = Math.max(4, Math.min(y, window.innerHeight - panel.offsetHeight - 4));
+      panel.style.left = x + 'px'; panel.style.top = y + 'px';
+    });
+    ['pointerup','pointercancel'].forEach(function(ev){ head.addEventListener(ev, function(){ dragging = false; }); });
+  }
+  Object.keys(panels).forEach(function(k){ makeDraggable(panels[k]); });
+
+  /* ---------- countdown engine (shared by timer + zandloper) ---------- */
+  function createCountdown(opts){
+    var totalMs = opts.duration * 1000, remainingMs = totalMs, running = false, lastTick = null, raf = null;
+    function frame(now){
+      if(!running) return;
+      if(lastTick == null) lastTick = now;
+      var dt = now - lastTick; lastTick = now;
+      remainingMs = Math.max(0, remainingMs - dt);
+      opts.onTick(remainingMs, totalMs);
+      if(remainingMs <= 0){ running = false; opts.onDone && opts.onDone(); return; }
+      raf = requestAnimationFrame(frame);
+    }
+    return {
+      start: function(){ if(running || remainingMs <= 0) return; running = true; lastTick = null; raf = requestAnimationFrame(frame); },
+      pause: function(){ running = false; if(raf) cancelAnimationFrame(raf); },
+      reset: function(){ running = false; if(raf) cancelAnimationFrame(raf); remainingMs = totalMs; opts.onTick(remainingMs, totalMs); },
+      setDuration: function(sec){ running = false; if(raf) cancelAnimationFrame(raf); totalMs = sec * 1000; remainingMs = totalMs; opts.onTick(remainingMs, totalMs); },
+      isRunning: function(){ return running; }
+    };
+  }
+  function fmt(ms){ var s = Math.ceil(ms/1000); var m = Math.floor(s/60); s = s%60; return (m<10?'0'+m:m)+':'+(s<10?'0'+s:s); }
+
+  var ringLen = 2 * Math.PI * 52;
+  var timerRing = document.getElementById('timerRing'); timerRing.setAttribute('stroke-dasharray', ringLen.toFixed(1));
+  var timerReadout = document.getElementById('timerReadout');
+  var timerStartBtn = document.getElementById('timerStart');
+  var timer = createCountdown({
+    duration: 180,
+    onTick: function(rem,total){ timerReadout.textContent = fmt(rem); var frac = total>0?rem/total:0; timerRing.setAttribute('stroke-dashoffset',(ringLen*(1-frac)).toFixed(1)); },
+    onDone: function(){ timerStartBtn.textContent = 'Start'; beep(); }
+  });
+  timer.reset();
+  document.querySelectorAll('[data-preset-timer]').forEach(function(b){ b.addEventListener('click', function(){ timer.setDuration(parseInt(b.getAttribute('data-preset-timer'),10)); timerStartBtn.textContent='Start'; }); });
+  timerStartBtn.addEventListener('click', function(){ if(timer.isRunning()){ timer.pause(); timerStartBtn.textContent='Start'; } else { timer.start(); timerStartBtn.textContent='Pauze'; } });
+  document.getElementById('timerReset').addEventListener('click', function(){ timer.reset(); timerStartBtn.textContent='Start'; });
+
+  var glassReadout = document.getElementById('glassReadout');
+  var sandTop = document.getElementById('sandTop'), sandBottom = document.getElementById('sandBottom');
+  var glassStartBtn = document.getElementById('glassStart');
+  var glass = createCountdown({
+    duration: 180,
+    onTick: function(rem,total){
+      glassReadout.textContent = fmt(rem);
+      var frac = total>0?rem/total:0;
+      sandTop.setAttribute('height', (50*frac).toFixed(1)); sandTop.setAttribute('y', (56-50*frac).toFixed(1));
+      sandBottom.setAttribute('height', (44*(1-frac)).toFixed(1)); sandBottom.setAttribute('y', (114-44*(1-frac)).toFixed(1));
+    },
+    onDone: function(){ glassStartBtn.textContent = 'Start'; beep(); }
+  });
+  glass.reset();
+  document.querySelectorAll('[data-preset-glass]').forEach(function(b){ b.addEventListener('click', function(){ glass.setDuration(parseInt(b.getAttribute('data-preset-glass'),10)); glassStartBtn.textContent='Start'; }); });
+  glassStartBtn.addEventListener('click', function(){ if(glass.isRunning()){ glass.pause(); glassStartBtn.textContent='Start'; } else { glass.start(); glassStartBtn.textContent='Pauze'; } });
+  document.getElementById('glassReset').addEventListener('click', function(){ glass.reset(); glassStartBtn.textContent='Start'; });
+
+  /* ---------- dice ---------- */
+  var pipPos = { tl:[15,15], tr:[45,15], ml:[15,30], mr:[45,30], bl:[15,45], br:[45,45], c:[30,30] };
+  var pipSets = { 1:['c'], 2:['tl','br'], 3:['tl','c','br'], 4:['tl','tr','bl','br'], 5:['tl','tr','c','bl','br'], 6:['tl','tr','ml','mr','bl','br'] };
+  function renderDie(el, value){
+    var pts = pipSets[value] || [1];
+    var svg = '<rect x="2" y="2" width="56" height="56" rx="10" fill="var(--dice-body)"/>';
+    pts.forEach(function(k){ var p = pipPos[k]; svg += '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="5.2" fill="var(--dice-pip)"/>'; });
+    el.innerHTML = svg;
+  }
+  var die1 = document.getElementById('die1'), die2 = document.getElementById('die2');
+  var diceCount = 1;
+  renderDie(die1,1); renderDie(die2,1);
+  document.getElementById('diceOne').addEventListener('click', function(){ diceCount=1; die2.style.display='none'; document.getElementById('diceSum').textContent=''; });
+  document.getElementById('diceTwo').addEventListener('click', function(){ diceCount=2; die2.style.display=''; });
+  document.getElementById('diceRoll').addEventListener('click', function(){
+    var dice = diceCount===2 ? [die1,die2] : [die1];
+    dice.forEach(function(d){ d.classList.add('is-rolling'); });
+    var steps = reducedMotion ? 1 : 10, i = 0;
+    var iv = setInterval(function(){
+      dice.forEach(function(d){ renderDie(d, 1+Math.floor(Math.random()*6)); });
+      i++;
+      if(i>=steps){
+        clearInterval(iv);
+        var f1 = 1+Math.floor(Math.random()*6), f2 = 1+Math.floor(Math.random()*6);
+        renderDie(die1,f1); if(diceCount===2) renderDie(die2,f2);
+        dice.forEach(function(d){ d.classList.remove('is-rolling'); });
+        document.getElementById('diceSum').textContent = diceCount===2 ? 'Som: '+(f1+f2) : '';
+      }
+    }, reducedMotion ? 10 : 65);
+  });
+
+  /* ---------- curtain (doek), viewport-anchored ---------- */
+  var curtain = document.getElementById('curtain');
+  var curtainHandle = document.getElementById('curtainHandle');
+  var curtainReadout = document.getElementById('curtainReadout');
+  var coverPct = 0, curtainRaf = null;
+  function setCover(pct){ coverPct = Math.max(0, Math.min(100, pct)); curtain.style.height = coverPct + '%'; curtainReadout.textContent = 'Onthuld: ' + Math.round(100-coverPct) + '%'; }
+  setCover(0);
+  document.getElementById('curtainClose').addEventListener('click', function(){
+    if(curtainRaf) cancelAnimationFrame(curtainRaf);
+    curtain.style.transition = 'height .4s ease'; setCover(100);
+    setTimeout(function(){ curtain.style.transition = 'none'; }, 420);
+  });
+  document.getElementById('curtainReveal').addEventListener('click', function(){
+    if(curtainRaf) cancelAnimationFrame(curtainRaf);
+    curtain.style.transition = 'none';
+    var start = coverPct, startTime = null, duration = reducedMotion ? 300 : 9000;
+    function step(ts){ if(startTime==null) startTime=ts; var t = Math.min(1,(ts-startTime)/duration); setCover(start*(1-t)); if(t<1) curtainRaf = requestAnimationFrame(step); }
+    curtainRaf = requestAnimationFrame(step);
+  });
+  var dragging = false;
+  curtainHandle.addEventListener('pointerdown', function(e){ dragging = true; if(curtainRaf) cancelAnimationFrame(curtainRaf); curtain.style.transition='none'; curtainHandle.setPointerCapture(e.pointerId); });
+  curtainHandle.addEventListener('pointermove', function(e){ if(!dragging) return; var pct = ((window.innerHeight - e.clientY) / window.innerHeight) * 100; setCover(pct); });
+  ['pointerup','pointercancel'].forEach(function(ev){ curtainHandle.addEventListener(ev, function(){ dragging=false; }); });
+
+  /* ---------- naam kiezer ---------- */
+  document.getElementById('namePick').addEventListener('click', function(){
+    var names = document.getElementById('namesInput').value.split('\n').map(function(s){ return s.trim(); }).filter(Boolean);
+    var resultEl = document.getElementById('nameResult');
+    if(names.length < 1){ resultEl.textContent = 'Voeg namen toe'; return; }
+    var steps = reducedMotion ? 1 : 14, i = 0;
+    var iv = setInterval(function(){
+      resultEl.textContent = names[Math.floor(Math.random()*names.length)];
+      i++;
+      if(i>=steps){ clearInterval(iv); resultEl.textContent = names[Math.floor(Math.random()*names.length)]; }
+    }, reducedMotion ? 10 : 70);
+  });
+
+  /* ---------- stoplicht ---------- */
+  document.querySelectorAll('.signal button').forEach(function(b){
+    b.addEventListener('click', function(){
+      document.querySelectorAll('.signal button').forEach(function(o){ o.classList.remove('active'); });
+      b.classList.add('active');
+      document.getElementById('signalLabel').textContent = b.getAttribute('data-signal');
+    });
+  });
+
+  /* ---------- groepjes maken ---------- */
+  function escapeHtml(s){
+    return s.replace(/[&<>"']/g, function(c){
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+    });
+  }
+  var groupCount = 3;
+  document.querySelectorAll('[data-group-count]').forEach(function(b){
+    if(parseInt(b.getAttribute('data-group-count'), 10) === groupCount) b.classList.add('primary');
+    b.addEventListener('click', function(){
+      groupCount = parseInt(b.getAttribute('data-group-count'), 10);
+      document.querySelectorAll('[data-group-count]').forEach(function(o){ o.classList.remove('primary'); });
+      b.classList.add('primary');
+    });
+  });
+  document.getElementById('groupsMake').addEventListener('click', function(){
+    var names = document.getElementById('groupNamesInput').value.split('\n').map(function(s){ return s.trim(); }).filter(Boolean);
+    var resultEl = document.getElementById('groupsResult');
+    if(names.length < 2){ resultEl.innerHTML = '<p style="font-size:.78rem; color:var(--dock-ink-muted); margin:0;">Voeg minstens twee namen toe.</p>'; return; }
+    var n = Math.min(groupCount, names.length);
+    var shuffled = names.slice();
+    for(var i = shuffled.length - 1; i > 0; i--){
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = shuffled[i]; shuffled[i] = shuffled[j]; shuffled[j] = t;
+    }
+    var groups = [];
+    for(var g = 0; g < n; g++){ groups.push([]); }
+    shuffled.forEach(function(name, idx){ groups[idx % n].push(name); });
+    resultEl.innerHTML = groups.map(function(g, idx){
+      return '<div class="group-card"><div class="group-title">Groep ' + (idx + 1) + '</div>' +
+        g.map(function(name){ return '<div class="group-name">' + escapeHtml(name) + '</div>'; }).join('') +
+        '</div>';
+    }).join('');
+  });
+})();
+</script>
+</body>
+</html>
