@@ -7,22 +7,33 @@
 <script src="https://www.lessonup.com/embed.js"></script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
 <style>
+  /* LessonUp brand colors, pulled from lessonup.com's own stylesheet:
+     #001343 (navy — their primary dark/ink), #E5FF45 (signature lime accent),
+     #4E7FFF (blue), #4DC6E6 (cyan), #00B6BC (teal), #EC484D (coral), #F8C82D (gold) */
   :root{
-    --bg:#F3ECDC; --surface:#FFFDF8; --surface-2:#EAE0C8; --ink:#241C15; --ink-muted:#6E6152;
-    --border:#DBCBA6; --accent:#A6672A; --accent-strong:#8A5220; --accent-ink:#FFF8ED; --curtain-ink:#7C2233;
-    --shadow: 0 12px 32px -16px rgba(36,28,21,.35);
+    --bg:#F3F3F3; --surface:#FFFFFF; --surface-2:#EDEDF4; --ink:#001343; --ink-muted:#5B6785;
+    --border:#DCDCE6; --accent:#4E7FFF; --accent-strong:#2F5CE0; --accent-ink:#FFFFFF; --curtain-ink:#5B6785;
+    --shadow: 0 12px 32px -16px rgba(0,19,67,.25);
   }
   @media (prefers-color-scheme: dark){
-    :root{
-      --bg:#1B1710; --surface:#241F18; --surface-2:#2E281E; --ink:#F3E9D6; --ink-muted:#BDAD90;
-      --border:#3C3324; --accent:#E8A945; --accent-strong:#F2BE6C; --accent-ink:#241C15; --curtain-ink:#E58A9B;
+    :root:not([data-theme="light"]){
+      --bg:#0B1330; --surface:#111B41; --surface-2:#182352; --ink:#F0F1F7; --ink-muted:#98A3C7;
+      --border:#26315E; --accent:#E5FF45; --accent-strong:#EFFF80; --accent-ink:#001343; --curtain-ink:#98A3C7;
       --shadow: 0 12px 32px -16px rgba(0,0,0,.6);
     }
   }
+  :root[data-theme="dark"]{
+    --bg:#0B1330; --surface:#111B41; --surface-2:#182352; --ink:#F0F1F7; --ink-muted:#98A3C7;
+    --border:#26315E; --accent:#E5FF45; --accent-strong:#EFFF80; --accent-ink:#001343; --curtain-ink:#98A3C7;
+    --shadow: 0 12px 32px -16px rgba(0,0,0,.6);
+  }
+
+  /* the dock itself is a fixed LessonUp-navy surface in both page themes — it represents
+     product chrome, not page content, so it always uses the brand navy + signature lime */
   :root{
-    --dock-surface:#1E2E29; --dock-ink:#F2ECDD; --dock-ink-muted:#9FB3AC; --dock-accent:#F0B23E; --dock-accent-ink:#1B140A;
-    --panel-surface:#22332D; --panel-border:#3B4E44; --curtain-a:#7C2233; --curtain-b:#54151F;
-    --curtain-rod:#D9A24B; --dice-body:#F2ECDD; --dice-pip:#241C15;
+    --dock-surface:#001343; --dock-ink:#FFFFFF; --dock-ink-muted:#8C9BC7; --dock-accent:#E5FF45; --dock-accent-ink:#001343;
+    --panel-surface:#0C1B45; --panel-border:#223568; --curtain-a:#EDEAE2; --curtain-b:#DEDAD0;
+    --curtain-rod:#B6B2A8; --dice-body:#FFFFFF; --dice-pip:#001343;
     --z-top: 2147483000;
   }
   *{ box-sizing:border-box; }
@@ -43,9 +54,12 @@
     margin-top:36px; padding:22px 24px; border-radius:16px; background:var(--surface); border:1px solid var(--border);
     box-shadow:var(--shadow); display:flex; align-items:center; gap:18px; flex-wrap:wrap;
   }
-  .launch-card .meta{ flex:1; min-width:220px; }
+  .launch-card .meta{ flex:1; min-width:260px; }
   .launch-card .meta .label{ font-family:"IBM Plex Mono",monospace; font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-muted); }
   .launch-card .meta .id{ font-family:"IBM Plex Mono",monospace; font-size:.95rem; margin-top:4px; }
+  .lesson-input{ width:100%; margin-top:6px; font:inherit; font-family:"IBM Plex Mono",monospace; font-size:.85rem; padding:9px 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2); color:var(--ink); }
+  .lesson-input:focus{ outline:2px solid var(--accent); outline-offset:1px; }
+  .lesson-hint{ font-size:.74rem; color:var(--ink-muted); margin-top:4px; }
   .status-dot{ display:inline-block; width:8px; height:8px; border-radius:50%; background:#C7B78A; margin-right:6px; }
   .status-dot.ready{ background:#3F8F52; }
   .btn{ font:inherit; font-size:.85rem; padding:10px 18px; border-radius:10px; border:1px solid var(--border); background:var(--surface-2); color:var(--ink); cursor:pointer; }
@@ -70,12 +84,12 @@
     position:fixed; inset:0; z-index:calc(var(--z-top) - 2); display:flex; align-items:center; justify-content:center;
     opacity:0; pointer-events:none; transition:opacity .35s ease;
     -webkit-backdrop-filter: blur(8px) saturate(.75); backdrop-filter: blur(8px) saturate(.75);
-    background: rgba(10,16,15,.18);
+    background: rgba(0,19,67,.2);
   }
   .freeze-badge.active{ opacity:1; pointer-events:auto; }
   .freeze-pill{
     display:flex; align-items:center; gap:10px; padding:12px 20px; border-radius:999px;
-    background:rgba(16,30,27,.82); border:1px solid rgba(255,255,255,.18); color:#EAF6F8; font-size:.88rem;
+    background:rgba(0,19,67,.85); border:1px solid rgba(255,255,255,.18); color:#FFFFFF; font-size:.88rem;
   }
   .curtain{
     position:fixed; left:0; right:0; bottom:0; height:0%; z-index:calc(var(--z-top) - 1);
@@ -85,8 +99,8 @@
     box-shadow: 0 -14px 26px -12px rgba(0,0,0,.55) inset;
   }
   .curtain-handle{ position:absolute; left:0; right:0; top:0; height:26px; margin-top:-13px; display:flex; align-items:center; justify-content:center; cursor:ns-resize; touch-action:none; }
-  .curtain-handle .rod{ width:min(94%,700px); height:9px; border-radius:4px; background:linear-gradient(180deg,var(--curtain-rod),#8C6320); box-shadow:0 2px 6px rgba(0,0,0,.4); display:flex; align-items:center; justify-content:center; }
-  .curtain-handle .rod::after{ content:"⋮⋮⋮"; letter-spacing:3px; color:#5B3E12; font-size:.62rem; }
+  .curtain-handle .rod{ width:min(94%,700px); height:9px; border-radius:4px; background:linear-gradient(180deg,var(--curtain-rod),#8A867B); box-shadow:0 2px 6px rgba(0,0,0,.4); display:flex; align-items:center; justify-content:center; }
+  .curtain-handle .rod::after{ content:"⋮⋮⋮"; letter-spacing:3px; color:#5A5750; font-size:.62rem; }
 
   .dock-tab{
     position:fixed; top:0; left:50%; transform:translateX(-50%); z-index:var(--z-top);
@@ -160,13 +174,13 @@
      because it only makes sense layered on top of real, already-visible lesson content */
   .spotlight{
     position:fixed; inset:0; z-index:calc(var(--z-top) - 1); display:none; cursor:crosshair;
-    background: radial-gradient(circle var(--sr,140px) at var(--sx,50%) var(--sy,50%), transparent 0, transparent calc(var(--sr,140px) - 2px), rgba(6,10,9,.74) var(--sr,140px));
+    background: radial-gradient(circle var(--sr,140px) at var(--sx,50%) var(--sy,50%), transparent 0, transparent calc(var(--sr,140px) - 2px), rgba(0,19,67,.76) var(--sr,140px));
   }
   .spotlight.active{ display:block; }
   .spotlight-pill{
     position:absolute; top:64px; left:50%; transform:translateX(-50%); white-space:nowrap;
     display:flex; align-items:center; gap:10px; padding:10px 18px; border-radius:999px;
-    background:rgba(16,30,27,.82); border:1px solid rgba(255,255,255,.18); color:#EAF6F8; font-size:.82rem;
+    background:rgba(0,19,67,.85); border:1px solid rgba(255,255,255,.18); color:#FFFFFF; font-size:.82rem;
   }
 
   /* geluidsmeter — real microphone level instead of a manually-clicked light */
@@ -181,6 +195,12 @@
   .wheel-wrap canvas{ width:170px; height:170px; border-radius:50%; box-shadow:0 4px 14px rgba(0,0,0,.4); }
   .wheel-pointer{ position:absolute; top:-4px; left:50%; transform:translateX(-50%); width:0; height:0; border-left:9px solid transparent; border-right:9px solid transparent; border-top:14px solid var(--dock-accent); z-index:2; filter:drop-shadow(0 2px 2px rgba(0,0,0,.4)); }
 
+  /* combinatie-rad */
+  textarea.names.small{ min-height:52px; font-size:.7rem; }
+  .combi-row{ display:flex; gap:10px; }
+  .combi-col{ flex:1; display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .combi-canvas{ width:100px; height:100px; border-radius:50%; box-shadow:0 4px 12px rgba(0,0,0,.4); }
+
   @media (prefers-reduced-motion: reduce){ *{ animation-duration:.001ms !important; transition-duration:.001ms !important; } }
 </style>
 </head>
@@ -190,13 +210,14 @@
   <header class="intro">
     <p class="eyebrow">Werkende demo · live LessonUp-les</p>
     <h1>Classroom Dock</h1>
-    <p class="lede">Dit bestand laadt een echte, openbare LessonUp-les via de officiële embed (<code>embed.js</code> + <code>LessonUp.open()</code>) en legt daar het klassikale-tools-dock overheen: timer, zandloper, dobbelstenen, scherm bevriezen, een sleepbaar virtueel doek (met kijkgaatje), groepjes maken, een zoeklicht, een live geluidsmeter, een spinner en een vragenbank. Draai dit lokaal — de sandbox van een gepubliceerde Claude-artifact staat het laden van externe scripts niet toe.</p>
+    <p class="lede">Dit bestand laadt elke openbare LessonUp-les die je invoert via de officiële embed (<code>embed.js</code> + <code>LessonUp.open()</code>) en legt daar het klassikale-tools-dock overheen: timer, zandloper, dobbelstenen, scherm bevriezen, een sleepbaar virtueel doek (met kijkgaatje), groepjes maken, een zoeklicht, een live geluidsmeter, een spinner en een combinatie-rad. Draai dit lokaal — de sandbox van een gepubliceerde Claude-artifact staat het laden van externe scripts niet toe.</p>
   </header>
 
   <section class="launch-card">
     <div class="meta">
       <div class="label"><span class="status-dot" id="statusDot"></span><span id="statusText">Embed script laden…</span></div>
-      <div class="id">Les-ID: fdhqgKyenPd8JWLGr</div>
+      <input type="text" class="lesson-input" id="lessonIdInput" value="fdhqgKyenPd8JWLGr" placeholder="Les-ID of lessonup.com/…/lesson/…-link">
+      <div class="lesson-hint">Plak een link of alleen het les-ID van elke openbare LessonUp-les.</div>
     </div>
     <button class="btn primary" id="loadLessonBtn" disabled>Les laden</button>
     <button class="btn small" id="closeLessonBtn" style="display:none;">Les sluiten</button>
@@ -217,7 +238,7 @@
       <div class="card"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></svg>Zoeklicht <span style="font-weight:400; color:var(--accent-strong); font-size:.7rem;">— nieuw</span></h3><p>Dimt alles behalve een cirkel die de muis volgt, recht boven de échte les — precies wijzen zonder iets te bedekken. Scrollen maakt de cirkel groter of kleiner. Geen enkele concurrent kan dit, want zij tonen geen echte lesinhoud.</p></div>
       <div class="card"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v10"/><path d="M8 6c-3 2-3 8 4 8s7-6 4-8"/></svg>Geluidsmeter <span style="font-weight:400; color:var(--accent-strong); font-size:.7rem;">— nieuw</span></h3><p>Meet het écht geluidsniveau via de microfoon in plaats van een handmatig aangeklikt stoplicht — niets wordt opgenomen of verstuurd, alleen live gemeten.</p></div>
       <div class="card"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 12 L12 3"/><path d="M12 12 L18.5 16"/><path d="M12 12 L6 16.5"/></svg>Spinner <span style="font-weight:400; color:var(--accent-strong); font-size:.7rem;">— nieuw</span></h3><p>Rad van fortuin met je eigen lijst: tekent een echt segmenten-wiel, draait met een natuurlijke vertraging en landt willekeurig op één naam.</p></div>
-      <div class="card"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 9c0-1.7 1.3-3 3-3s3 1.1 3 2.6c0 1.8-2 2-2.6 3.2-.2.4-.4 1-.4 1.7"/><circle cx="12" cy="17" r=".9" fill="currentColor" stroke="none"/></svg>Vraag herhalen <span style="font-weight:400; color:var(--accent-strong); font-size:.7rem;">— nieuw</span></h3><p>Handmatige vragenbank die willekeurig een herhalingsvraag serveert — bewust géén uitlezing van de echte quizvragen, want de embed geeft die niet door.</p></div>
+      <div class="card"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="8" cy="12" r="5.2"/><circle cx="17.5" cy="12" r="3.6"/></svg>Combinatie-rad <span style="font-weight:400; color:var(--accent-strong); font-size:.7rem;">— nieuw, geïnspireerd op BookWidgets</span></h3><p>Twee wieltjes die tegelijk draaien en samen één opdracht vormen — bijvoorbeeld een werkwoord + een tijdslimiet. Geïnspireerd op BookWidgets' Randomness-widget.</p></div>
     </div>
   </section>
 
@@ -249,7 +270,7 @@
   <button type="button" data-tool="zoeklicht" title="Zoeklicht"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></svg>Zoeklicht</button>
   <button type="button" data-tool="geluid" title="Geluidsmeter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v10"/><path d="M8 6c-3 2-3 8 4 8s7-6 4-8"/></svg>Geluid</button>
   <button type="button" data-tool="spinner" title="Spinner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 12 L12 3"/><path d="M12 12 L18.5 16"/><path d="M12 12 L6 16.5"/></svg>Spinner</button>
-  <button type="button" data-tool="vragen" title="Vraag herhalen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 9c0-1.7 1.3-3 3-3s3 1.1 3 2.6c0 1.8-2 2-2.6 3.2-.2.4-.4 1-.4 1.7"/><circle cx="12" cy="17" r=".9" fill="currentColor" stroke="none"/></svg>Vraag</button>
+  <button type="button" data-tool="combirad" title="Combinatie-rad"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="8" cy="12" r="5.2"/><circle cx="17.5" cy="12" r="3.6"/></svg>Combi-rad</button>
 </div>
 
 <div class="tool-panel" id="panel-timer" style="top:66px; left:16px;">
@@ -387,15 +408,26 @@ Bram</textarea>
   </div>
 </div>
 
-<div class="tool-panel wide" id="panel-vragen" style="top:180px; left:50%; transform:translate(calc(-50% - 170px), 0);">
-  <div class="panel-head">Vraag herhalen<button class="panel-close" data-close="vragen">✕</button></div>
+<div class="tool-panel wide" id="panel-combirad" style="top:180px; left:50%; transform:translate(calc(-50% - 170px), 0);">
+  <div class="panel-head">Combinatie-rad<button class="panel-close" data-close="combirad">✕</button></div>
   <div class="panel-body">
-    <p style="margin:0; font-size:.76rem; color:var(--dock-ink-muted);">Handmatige vragenbank — het dock kan de echte quizvragen uit de les (nog) niet uitlezen, dus plak hier zelf een paar herhalingsvragen.</p>
-    <textarea class="names" id="questionsInput">Wat gebeurt er met ijs als je het verwarmt?
-Noem één voorbeeld van een vaste stof.
-Wat is het verschil tussen smelten en koken?</textarea>
-    <div class="name-result" id="questionResult" style="font-size:1rem;">—</div>
-    <div class="row"><button class="pbtn primary" id="questionPick">Kies willekeurige vraag</button></div>
+    <p style="margin:0; font-size:.76rem; color:var(--dock-ink-muted);">Twee wieltjes tegelijk draaien en combineren tot één opdracht — geïnspireerd op BookWidgets' Randomness-widget.</p>
+    <div class="combi-row">
+      <div class="combi-col">
+        <textarea class="names small" id="combiAInput">Beschrijf
+Teken
+Leg uit</textarea>
+        <canvas class="combi-canvas" id="combiCanvasA" width="140" height="140"></canvas>
+      </div>
+      <div class="combi-col">
+        <textarea class="names small" id="combiBInput">in 1 minuut
+aan een klasgenoot
+zonder woorden</textarea>
+        <canvas class="combi-canvas" id="combiCanvasB" width="140" height="140"></canvas>
+      </div>
+    </div>
+    <div class="name-result" id="combiResult" style="font-size:1rem;">—</div>
+    <div class="row"><button class="pbtn primary" id="combiSpin">Spin beide</button></div>
   </div>
 </div>
 
@@ -403,13 +435,13 @@ Wat is het verschil tussen smelten en koken?</textarea>
 (function(){
   "use strict";
   var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var LESSON_ID = 'fdhqgKyenPd8JWLGr';
 
   /* ---------- wait for the LessonUp embed script, then enable the launch button ---------- */
   var statusDot = document.getElementById('statusDot');
   var statusText = document.getElementById('statusText');
   var loadBtn = document.getElementById('loadLessonBtn');
   var closeBtn = document.getElementById('closeLessonBtn');
+  var lessonIdInput = document.getElementById('lessonIdInput');
   var tries = 0;
   (function waitForEmbed(){
     tries++;
@@ -423,9 +455,17 @@ Wat is het verschil tussen smelten en koken?</textarea>
     setTimeout(waitForEmbed, 100);
   })();
 
+  function extractLessonId(raw){
+    raw = (raw || '').trim();
+    var m = raw.match(/\/lesson\/([^\/?#]+)/);
+    return m ? m[1] : raw;
+  }
+
   loadBtn.addEventListener('click', function(){
     if(!(window.LessonUp && typeof window.LessonUp.open === 'function')) return;
-    window.LessonUp.open(LESSON_ID);
+    var id = extractLessonId(lessonIdInput.value);
+    if(!id){ statusText.textContent = 'Vul eerst een les-ID of link in'; return; }
+    window.LessonUp.open(id);
     closeBtn.style.display = '';
   });
   closeBtn.addEventListener('click', function(){
@@ -456,7 +496,7 @@ Wat is het verschil tussen smelten en koken?</textarea>
 
   /* ---------- panels wired to dock buttons ---------- */
   var panels = {};
-  ['timer','zandloper','dobbelstenen','doek','naam','groepjes','stoplicht','geluid','spinner','vragen'].forEach(function(id){ panels[id] = document.getElementById('panel-' + id); });
+  ['timer','zandloper','dobbelstenen','doek','naam','groepjes','stoplicht','geluid','spinner','combirad'].forEach(function(id){ panels[id] = document.getElementById('panel-' + id); });
   var freezeOn = false;
   var spotlightOn = false;
   var spotlightEl = document.getElementById('spotlight');
@@ -777,81 +817,95 @@ Wat is het verschil tussen smelten en koken?</textarea>
     updatePeephole(e.clientX, e.clientY);
   }, { passive: false });
 
-  /* ---------- spinner (rad van fortuin) ---------- */
-  var wheelCanvas = document.getElementById('wheelCanvas');
-  var wheelCtx = wheelCanvas.getContext('2d');
+  /* ---------- wheel factory (rad van fortuin) — shared by Spinner and Combinatie-rad ---------- */
+  var wheelPalette = ['#E5FF45', '#4E7FFF', '#EC484D', '#00B6BC', '#F8C82D', '#4DC6E6', '#D2D1FF'];
+  function wheelTextColor(hex){
+    var r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    var luma = (0.299*r + 0.587*g + 0.114*b) / 255;
+    return luma > 0.6 ? '#001343' : '#FFFFFF';
+  }
+  function makeWheel(canvas){
+    var ctx = canvas.getContext('2d');
+    var size = canvas.width;
+    var items = ['Item 1', 'Item 2'];
+    var rotation = 0, spinning = false;
+    function draw(list){
+      items = (list && list.length >= 2) ? list : ['Item 1', 'Item 2'];
+      var n = items.length, cx = size / 2, cy = size / 2, radius = size / 2 - 4;
+      var anglePer = (2 * Math.PI) / n;
+      ctx.clearRect(0, 0, size, size);
+      for(var i = 0; i < n; i++){
+        var start = i * anglePer, end = start + anglePer;
+        var segColor = wheelPalette[i % wheelPalette.length];
+        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, radius, start, end); ctx.closePath();
+        ctx.fillStyle = segColor; ctx.fill();
+        ctx.save();
+        ctx.translate(cx, cy); ctx.rotate(start + anglePer / 2);
+        ctx.fillStyle = wheelTextColor(segColor);
+        ctx.font = '600 ' + Math.max(9, Math.round(size / 17)) + 'px "IBM Plex Sans", sans-serif';
+        ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+        var maxChars = Math.round(size / 15);
+        var label = items[i].length > maxChars ? items[i].slice(0, maxChars - 1) + '…' : items[i];
+        ctx.fillText(label, radius - 8, 0);
+        ctx.restore();
+      }
+    }
+    function spin(onDone){
+      if(spinning) return;
+      var n = items.length;
+      var winnerIdx = Math.floor(Math.random() * n);
+      var anglePerDeg = 360 / n;
+      var centerDeg = winnerIdx * anglePerDeg + anglePerDeg / 2;
+      var pointerDeg = 270;
+      var currentMod = rotation % 360;
+      var neededExtra = ((pointerDeg - centerDeg) - currentMod + 3600) % 360;
+      rotation += (reducedMotion ? 0 : 360 * 5) + neededExtra;
+      spinning = true;
+      canvas.style.transition = reducedMotion ? 'transform .3s ease' : 'transform 4s cubic-bezier(.17,.67,.16,1)';
+      canvas.style.transform = 'rotate(' + rotation + 'deg)';
+      setTimeout(function(){ spinning = false; onDone(items[winnerIdx]); }, reducedMotion ? 320 : 4000);
+    }
+    return { draw: draw, spin: spin, isSpinning: function(){ return spinning; } };
+  }
+
+  /* ---------- spinner ---------- */
   var spinnerInput = document.getElementById('spinnerInput');
   var spinResult = document.getElementById('spinResult');
   var spinBtn = document.getElementById('spinBtn');
-  var wheelPalette = ['#F0B23E', '#7C2233', '#4FAE64', '#2E6F8E', '#C1443B', '#D9A24B', '#3B4E44'];
-  var wheelItems = [];
-  var wheelRotation = 0;
-  var wheelSpinning = false;
-
-  function drawWheel(){
-    var raw = spinnerInput.value.split('\n').map(function(s){ return s.trim(); }).filter(Boolean);
-    wheelItems = raw.length >= 2 ? raw : ['Naam 1', 'Naam 2'];
-    var n = wheelItems.length;
-    var cx = 100, cy = 100, radius = 96;
-    var anglePer = (2 * Math.PI) / n;
-    wheelCtx.clearRect(0, 0, 200, 200);
-    for(var i = 0; i < n; i++){
-      var start = i * anglePer, end = start + anglePer;
-      wheelCtx.beginPath();
-      wheelCtx.moveTo(cx, cy);
-      wheelCtx.arc(cx, cy, radius, start, end);
-      wheelCtx.closePath();
-      wheelCtx.fillStyle = wheelPalette[i % wheelPalette.length];
-      wheelCtx.fill();
-      wheelCtx.save();
-      wheelCtx.translate(cx, cy);
-      wheelCtx.rotate(start + anglePer / 2);
-      wheelCtx.fillStyle = '#F2ECDD';
-      wheelCtx.font = '600 12px "IBM Plex Sans", sans-serif';
-      wheelCtx.textAlign = 'right';
-      wheelCtx.textBaseline = 'middle';
-      var label = wheelItems[i].length > 14 ? wheelItems[i].slice(0, 13) + '…' : wheelItems[i];
-      wheelCtx.fillText(label, radius - 10, 0);
-      wheelCtx.restore();
-    }
-  }
-  drawWheel();
-  spinnerInput.addEventListener('input', function(){ if(!wheelSpinning) drawWheel(); });
-
+  var mainWheel = makeWheel(document.getElementById('wheelCanvas'));
+  function parseList(el){ return el.value.split('\n').map(function(s){ return s.trim(); }).filter(Boolean); }
+  mainWheel.draw(parseList(spinnerInput));
+  spinnerInput.addEventListener('input', function(){ if(!mainWheel.isSpinning()) mainWheel.draw(parseList(spinnerInput)); });
   spinBtn.addEventListener('click', function(){
-    if(wheelSpinning) return;
-    drawWheel();
-    var n = wheelItems.length;
-    var winnerIdx = Math.floor(Math.random() * n);
-    var anglePerDeg = 360 / n;
-    var centerDeg = winnerIdx * anglePerDeg + anglePerDeg / 2;
-    var pointerDeg = 270; // top of the wheel, matching the fixed pointer above the canvas
-    var currentMod = wheelRotation % 360;
-    var neededExtra = ((pointerDeg - centerDeg) - currentMod + 3600) % 360;
-    wheelRotation += (reducedMotion ? 0 : 360 * 5) + neededExtra;
-    wheelSpinning = true;
-    spinBtn.disabled = true;
-    spinResult.textContent = '…';
-    wheelCanvas.style.transition = reducedMotion ? 'transform .3s ease' : 'transform 4s cubic-bezier(.17,.67,.16,1)';
-    wheelCanvas.style.transform = 'rotate(' + wheelRotation + 'deg)';
-    setTimeout(function(){
-      spinResult.textContent = wheelItems[winnerIdx];
-      wheelSpinning = false;
-      spinBtn.disabled = false;
-    }, reducedMotion ? 320 : 4000);
+    if(mainWheel.isSpinning()) return;
+    mainWheel.draw(parseList(spinnerInput));
+    spinBtn.disabled = true; spinResult.textContent = '…';
+    mainWheel.spin(function(winner){ spinResult.textContent = winner; spinBtn.disabled = false; });
   });
 
-  /* ---------- vraag herhalen (handmatige vragenbank) ---------- */
-  document.getElementById('questionPick').addEventListener('click', function(){
-    var questions = document.getElementById('questionsInput').value.split('\n').map(function(s){ return s.trim(); }).filter(Boolean);
-    var resultEl = document.getElementById('questionResult');
-    if(questions.length < 1){ resultEl.textContent = 'Voeg vragen toe'; return; }
-    var steps = reducedMotion ? 1 : 14, i = 0;
-    var iv = setInterval(function(){
-      resultEl.textContent = questions[Math.floor(Math.random() * questions.length)];
-      i++;
-      if(i >= steps){ clearInterval(iv); resultEl.textContent = questions[Math.floor(Math.random() * questions.length)]; }
-    }, reducedMotion ? 10 : 70);
+  /* ---------- combinatie-rad (BookWidgets-stijl: twee wieltjes samen spinnen) ---------- */
+  var combiAInput = document.getElementById('combiAInput');
+  var combiBInput = document.getElementById('combiBInput');
+  var combiResult = document.getElementById('combiResult');
+  var combiSpinBtn = document.getElementById('combiSpin');
+  var wheelA = makeWheel(document.getElementById('combiCanvasA'));
+  var wheelB = makeWheel(document.getElementById('combiCanvasB'));
+  wheelA.draw(parseList(combiAInput));
+  wheelB.draw(parseList(combiBInput));
+  combiAInput.addEventListener('input', function(){ if(!wheelA.isSpinning()) wheelA.draw(parseList(combiAInput)); });
+  combiBInput.addEventListener('input', function(){ if(!wheelB.isSpinning()) wheelB.draw(parseList(combiBInput)); });
+  combiSpinBtn.addEventListener('click', function(){
+    if(wheelA.isSpinning() || wheelB.isSpinning()) return;
+    wheelA.draw(parseList(combiAInput)); wheelB.draw(parseList(combiBInput));
+    combiSpinBtn.disabled = true; combiResult.textContent = '…';
+    var winA = null, winB = null;
+    function maybeFinish(){
+      if(winA === null || winB === null) return;
+      combiResult.textContent = winA + ' ' + winB;
+      combiSpinBtn.disabled = false;
+    }
+    wheelA.spin(function(w){ winA = w; maybeFinish(); });
+    wheelB.spin(function(w){ winB = w; maybeFinish(); });
   });
 })();
 </script>
