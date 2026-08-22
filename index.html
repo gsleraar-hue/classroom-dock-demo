@@ -176,6 +176,11 @@
   .meter-fill.loud{ background:#D6483F; }
   .meter-label{ text-align:center; font-family:"IBM Plex Mono",monospace; font-size:.76rem; color:var(--dock-ink-muted); }
 
+  /* spinner (rad van fortuin) */
+  .wheel-wrap{ position:relative; display:flex; justify-content:center; margin:2px 0; }
+  .wheel-wrap canvas{ width:170px; height:170px; border-radius:50%; box-shadow:0 4px 14px rgba(0,0,0,.4); }
+  .wheel-pointer{ position:absolute; top:-4px; left:50%; transform:translateX(-50%); width:0; height:0; border-left:9px solid transparent; border-right:9px solid transparent; border-top:14px solid var(--dock-accent); z-index:2; filter:drop-shadow(0 2px 2px rgba(0,0,0,.4)); }
+
   @media (prefers-reduced-motion: reduce){ *{ animation-duration:.001ms !important; transition-duration:.001ms !important; } }
 </style>
 </head>
@@ -185,7 +190,7 @@
   <header class="intro">
     <p class="eyebrow">Werkende demo · live LessonUp-les</p>
     <h1>Classroom Dock</h1>
-    <p class="lede">Dit bestand laadt een echte, openbare LessonUp-les via de officiële embed (<code>embed.js</code> + <code>LessonUp.open()</code>) en legt daar het klassikale-tools-dock overheen: timer, zandloper, dobbelstenen, scherm bevriezen, een sleepbaar virtueel doek, groepjes maken, een zoeklicht en een live geluidsmeter. Draai dit lokaal — de sandbox van een gepubliceerde Claude-artifact staat het laden van externe scripts niet toe.</p>
+    <p class="lede">Dit bestand laadt een echte, openbare LessonUp-les via de officiële embed (<code>embed.js</code> + <code>LessonUp.open()</code>) en legt daar het klassikale-tools-dock overheen: timer, zandloper, dobbelstenen, scherm bevriezen, een sleepbaar virtueel doek (met kijkgaatje), groepjes maken, een zoeklicht, een live geluidsmeter, een spinner en een vragenbank. Draai dit lokaal — de sandbox van een gepubliceerde Claude-artifact staat het laden van externe scripts niet toe.</p>
   </header>
 
   <section class="launch-card">
@@ -205,12 +210,14 @@
       <div class="card"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M6 3h12"/><path d="M6 21h12"/><path d="M6 3c0 5 5 6.5 6 9-1 2.5-6 4-6 9"/></svg>Zandloper</h3><p>Dezelfde countdown, maar visueel: zand stroomt zichtbaar van boven naar beneden.</p></div>
       <div class="card"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg>Dobbelstenen</h3><p>Eén of twee dobbelstenen met een korte rolanimatie en een écht willekeurige uitkomst.</p></div>
       <div class="card"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="12" y1="2" x2="12" y2="22"/><line x1="4.5" y1="6" x2="19.5" y2="18"/></svg>Scherm bevriezen</h3><p>Vervaagt en vergrendelt alles eronder — ook de echte les — zodat leerlingen niet kunnen doorklikken.</p></div>
-      <div class="card"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 4h16"/><path d="M7 20c2-2 8-2 10 0"/></svg>Virtueel doek</h3><p>Een doek bedekt het scherm vanaf de onderkant; sleep de roede omhoog of laat het automatisch langzaam verdwijnen.</p></div>
+      <div class="card"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 4h16"/><path d="M7 20c2-2 8-2 10 0"/></svg>Virtueel doek</h3><p>Een doek bedekt het scherm vanaf de onderkant; sleep de roede omhoog of laat het automatisch langzaam verdwijnen. Met <strong>kijkgaatje aan</strong> prikt de muis een rond gaatje in het doek dat de echte les eronder laat gluren.</p></div>
       <div class="card"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c1.5-4 4.5-6 7-6s5.5 2 7 6"/></svg>Naam kiezer</h3><p>Plak een klassenlijst, klik op kiezen en er flitst willekeurig een naam voorbij.</p></div>
       <div class="card"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="8" y="2" width="8" height="20" rx="4"/></svg>Stoplicht</h3><p>Rood/geel/groen om geluidsniveau of werkvorm aan te geven.</p></div>
       <div class="card"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="7" cy="8" r="2.6"/><circle cx="17" cy="8" r="2.6"/><path d="M3 19c.8-3 2.4-4.5 4-4.5s3.2 1.5 4 4.5"/></svg>Groepjes maken</h3><p>Zelfde klassenlijst als de naam kiezer, eerlijk verdeeld over 2, 3 of 4 groepjes met één klik.</p></div>
       <div class="card"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></svg>Zoeklicht <span style="font-weight:400; color:var(--accent-strong); font-size:.7rem;">— nieuw</span></h3><p>Dimt alles behalve een cirkel die de muis volgt, recht boven de échte les — precies wijzen zonder iets te bedekken. Scrollen maakt de cirkel groter of kleiner. Geen enkele concurrent kan dit, want zij tonen geen echte lesinhoud.</p></div>
       <div class="card"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v10"/><path d="M8 6c-3 2-3 8 4 8s7-6 4-8"/></svg>Geluidsmeter <span style="font-weight:400; color:var(--accent-strong); font-size:.7rem;">— nieuw</span></h3><p>Meet het écht geluidsniveau via de microfoon in plaats van een handmatig aangeklikt stoplicht — niets wordt opgenomen of verstuurd, alleen live gemeten.</p></div>
+      <div class="card"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 12 L12 3"/><path d="M12 12 L18.5 16"/><path d="M12 12 L6 16.5"/></svg>Spinner <span style="font-weight:400; color:var(--accent-strong); font-size:.7rem;">— nieuw</span></h3><p>Rad van fortuin met je eigen lijst: tekent een echt segmenten-wiel, draait met een natuurlijke vertraging en landt willekeurig op één naam.</p></div>
+      <div class="card"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 9c0-1.7 1.3-3 3-3s3 1.1 3 2.6c0 1.8-2 2-2.6 3.2-.2.4-.4 1-.4 1.7"/><circle cx="12" cy="17" r=".9" fill="currentColor" stroke="none"/></svg>Vraag herhalen <span style="font-weight:400; color:var(--accent-strong); font-size:.7rem;">— nieuw</span></h3><p>Handmatige vragenbank die willekeurig een herhalingsvraag serveert — bewust géén uitlezing van de echte quizvragen, want de embed geeft die niet door.</p></div>
     </div>
   </section>
 
@@ -241,6 +248,8 @@
   <button type="button" data-tool="stoplicht" title="Stoplicht"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="8" y="2" width="8" height="20" rx="4"/><circle cx="12" cy="7" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="17" r="1.6" fill="currentColor" stroke="none"/></svg>Stoplicht</button>
   <button type="button" data-tool="zoeklicht" title="Zoeklicht"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="5"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/></svg>Zoeklicht</button>
   <button type="button" data-tool="geluid" title="Geluidsmeter"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 3v10"/><path d="M8 6c-3 2-3 8 4 8s7-6 4-8"/></svg>Geluid</button>
+  <button type="button" data-tool="spinner" title="Spinner"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M12 12 L12 3"/><path d="M12 12 L18.5 16"/><path d="M12 12 L6 16.5"/></svg>Spinner</button>
+  <button type="button" data-tool="vragen" title="Vraag herhalen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M9 9c0-1.7 1.3-3 3-3s3 1.1 3 2.6c0 1.8-2 2-2.6 3.2-.2.4-.4 1-.4 1.7"/><circle cx="12" cy="17" r=".9" fill="currentColor" stroke="none"/></svg>Vraag</button>
 </div>
 
 <div class="tool-panel" id="panel-timer" style="top:66px; left:16px;">
@@ -294,6 +303,8 @@
     <p style="margin:0; font-size:.78rem; color:var(--dock-ink-muted);">Sleep de roede op het doek, of gebruik de knoppen.</p>
     <div class="reveal-readout" id="curtainReadout">Onthuld: 0%</div>
     <div class="row"><button class="pbtn" id="curtainClose">Doek laten zakken</button><button class="pbtn primary" id="curtainReveal">Langzaam onthullen</button></div>
+    <div class="row"><button class="pbtn" id="peepholeToggle">Kijkgaatje aan</button></div>
+    <p style="margin:0; font-size:.72rem; color:var(--dock-ink-muted);">Met kijkgaatje aan prikt de muis een rond gaatje in het doek — beweeg erover om steeds een ander stukje van de echte les te laten gluren.</p>
   </div>
 </div>
 
@@ -356,6 +367,38 @@ Bram</textarea>
   </div>
 </div>
 
+<div class="tool-panel wide" id="panel-spinner" style="top:66px; left:50%; transform:translateX(-50%);">
+  <div class="panel-head">Spinner<button class="panel-close" data-close="spinner">✕</button></div>
+  <div class="panel-body">
+    <textarea class="names" id="spinnerInput">Sanne
+Milan
+Fenna
+Youssef
+Noor
+Daan
+Lotte
+Bram</textarea>
+    <div class="wheel-wrap">
+      <div class="wheel-pointer"></div>
+      <canvas id="wheelCanvas" width="200" height="200"></canvas>
+    </div>
+    <div class="name-result" id="spinResult">—</div>
+    <div class="row"><button class="pbtn primary" id="spinBtn">Spin</button></div>
+  </div>
+</div>
+
+<div class="tool-panel wide" id="panel-vragen" style="top:180px; left:50%; transform:translate(calc(-50% - 170px), 0);">
+  <div class="panel-head">Vraag herhalen<button class="panel-close" data-close="vragen">✕</button></div>
+  <div class="panel-body">
+    <p style="margin:0; font-size:.76rem; color:var(--dock-ink-muted);">Handmatige vragenbank — het dock kan de echte quizvragen uit de les (nog) niet uitlezen, dus plak hier zelf een paar herhalingsvragen.</p>
+    <textarea class="names" id="questionsInput">Wat gebeurt er met ijs als je het verwarmt?
+Noem één voorbeeld van een vaste stof.
+Wat is het verschil tussen smelten en koken?</textarea>
+    <div class="name-result" id="questionResult" style="font-size:1rem;">—</div>
+    <div class="row"><button class="pbtn primary" id="questionPick">Kies willekeurige vraag</button></div>
+  </div>
+</div>
+
 <script>
 (function(){
   "use strict";
@@ -413,7 +456,7 @@ Bram</textarea>
 
   /* ---------- panels wired to dock buttons ---------- */
   var panels = {};
-  ['timer','zandloper','dobbelstenen','doek','naam','groepjes','stoplicht','geluid'].forEach(function(id){ panels[id] = document.getElementById('panel-' + id); });
+  ['timer','zandloper','dobbelstenen','doek','naam','groepjes','stoplicht','geluid','spinner','vragen'].forEach(function(id){ panels[id] = document.getElementById('panel-' + id); });
   var freezeOn = false;
   var spotlightOn = false;
   var spotlightEl = document.getElementById('spotlight');
@@ -704,6 +747,111 @@ Bram</textarea>
     }).catch(function(){
       meterLabel.textContent = 'Geen toegang tot de microfoon';
     });
+  });
+
+  /* ---------- kijkgaatje in het doek (peephole) ---------- */
+  var peepholeOn = false;
+  var peepholeToggle = document.getElementById('peepholeToggle');
+  var peepholeRadius = 70;
+  function clearPeephole(){ curtain.style.maskImage = 'none'; curtain.style.webkitMaskImage = 'none'; }
+  function updatePeephole(clientX, clientY){
+    var r = curtain.getBoundingClientRect();
+    var x = clientX - r.left, y = clientY - r.top;
+    var g = 'radial-gradient(circle ' + peepholeRadius + 'px at ' + x + 'px ' + y + 'px, transparent 0, transparent ' + (peepholeRadius - 2) + 'px, black ' + peepholeRadius + 'px)';
+    curtain.style.maskImage = g; curtain.style.webkitMaskImage = g;
+  }
+  peepholeToggle.addEventListener('click', function(){
+    peepholeOn = !peepholeOn;
+    peepholeToggle.textContent = peepholeOn ? 'Kijkgaatje uit' : 'Kijkgaatje aan';
+    peepholeToggle.classList.toggle('primary', peepholeOn);
+    if(!peepholeOn) clearPeephole();
+  });
+  document.addEventListener('pointermove', function(e){
+    if(!peepholeOn) return;
+    updatePeephole(e.clientX, e.clientY);
+  });
+  curtain.addEventListener('wheel', function(e){
+    if(!peepholeOn) return;
+    e.preventDefault();
+    peepholeRadius = Math.max(24, Math.min(260, peepholeRadius - e.deltaY * 0.3));
+    updatePeephole(e.clientX, e.clientY);
+  }, { passive: false });
+
+  /* ---------- spinner (rad van fortuin) ---------- */
+  var wheelCanvas = document.getElementById('wheelCanvas');
+  var wheelCtx = wheelCanvas.getContext('2d');
+  var spinnerInput = document.getElementById('spinnerInput');
+  var spinResult = document.getElementById('spinResult');
+  var spinBtn = document.getElementById('spinBtn');
+  var wheelPalette = ['#F0B23E', '#7C2233', '#4FAE64', '#2E6F8E', '#C1443B', '#D9A24B', '#3B4E44'];
+  var wheelItems = [];
+  var wheelRotation = 0;
+  var wheelSpinning = false;
+
+  function drawWheel(){
+    var raw = spinnerInput.value.split('\n').map(function(s){ return s.trim(); }).filter(Boolean);
+    wheelItems = raw.length >= 2 ? raw : ['Naam 1', 'Naam 2'];
+    var n = wheelItems.length;
+    var cx = 100, cy = 100, radius = 96;
+    var anglePer = (2 * Math.PI) / n;
+    wheelCtx.clearRect(0, 0, 200, 200);
+    for(var i = 0; i < n; i++){
+      var start = i * anglePer, end = start + anglePer;
+      wheelCtx.beginPath();
+      wheelCtx.moveTo(cx, cy);
+      wheelCtx.arc(cx, cy, radius, start, end);
+      wheelCtx.closePath();
+      wheelCtx.fillStyle = wheelPalette[i % wheelPalette.length];
+      wheelCtx.fill();
+      wheelCtx.save();
+      wheelCtx.translate(cx, cy);
+      wheelCtx.rotate(start + anglePer / 2);
+      wheelCtx.fillStyle = '#F2ECDD';
+      wheelCtx.font = '600 12px "IBM Plex Sans", sans-serif';
+      wheelCtx.textAlign = 'right';
+      wheelCtx.textBaseline = 'middle';
+      var label = wheelItems[i].length > 14 ? wheelItems[i].slice(0, 13) + '…' : wheelItems[i];
+      wheelCtx.fillText(label, radius - 10, 0);
+      wheelCtx.restore();
+    }
+  }
+  drawWheel();
+  spinnerInput.addEventListener('input', function(){ if(!wheelSpinning) drawWheel(); });
+
+  spinBtn.addEventListener('click', function(){
+    if(wheelSpinning) return;
+    drawWheel();
+    var n = wheelItems.length;
+    var winnerIdx = Math.floor(Math.random() * n);
+    var anglePerDeg = 360 / n;
+    var centerDeg = winnerIdx * anglePerDeg + anglePerDeg / 2;
+    var pointerDeg = 270; // top of the wheel, matching the fixed pointer above the canvas
+    var currentMod = wheelRotation % 360;
+    var neededExtra = ((pointerDeg - centerDeg) - currentMod + 3600) % 360;
+    wheelRotation += (reducedMotion ? 0 : 360 * 5) + neededExtra;
+    wheelSpinning = true;
+    spinBtn.disabled = true;
+    spinResult.textContent = '…';
+    wheelCanvas.style.transition = reducedMotion ? 'transform .3s ease' : 'transform 4s cubic-bezier(.17,.67,.16,1)';
+    wheelCanvas.style.transform = 'rotate(' + wheelRotation + 'deg)';
+    setTimeout(function(){
+      spinResult.textContent = wheelItems[winnerIdx];
+      wheelSpinning = false;
+      spinBtn.disabled = false;
+    }, reducedMotion ? 320 : 4000);
+  });
+
+  /* ---------- vraag herhalen (handmatige vragenbank) ---------- */
+  document.getElementById('questionPick').addEventListener('click', function(){
+    var questions = document.getElementById('questionsInput').value.split('\n').map(function(s){ return s.trim(); }).filter(Boolean);
+    var resultEl = document.getElementById('questionResult');
+    if(questions.length < 1){ resultEl.textContent = 'Voeg vragen toe'; return; }
+    var steps = reducedMotion ? 1 : 14, i = 0;
+    var iv = setInterval(function(){
+      resultEl.textContent = questions[Math.floor(Math.random() * questions.length)];
+      i++;
+      if(i >= steps){ clearInterval(iv); resultEl.textContent = questions[Math.floor(Math.random() * questions.length)]; }
+    }, reducedMotion ? 10 : 70);
   });
 })();
 </script>
