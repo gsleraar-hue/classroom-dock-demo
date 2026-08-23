@@ -32,7 +32,7 @@
      product chrome, not page content, so it always uses the brand navy + signature lime */
   :root{
     --dock-surface:#001343; --dock-ink:#FFFFFF; --dock-ink-muted:#8C9BC7; --dock-accent:#E5FF45; --dock-accent-ink:#001343;
-    --panel-surface:#0C1B45; --panel-border:#223568; --curtain-a:#EDEAE2; --curtain-b:#DEDAD0;
+    --panel-surface:#0C1B45; --panel-border:#223568; --curtain-solid:#E4E1D9;
     --curtain-rod:#B6B2A8; --dice-body:#FFFFFF; --dice-pip:#001343;
     --z-top: 2147483000;
   }
@@ -93,10 +93,8 @@
   }
   .curtain{
     position:fixed; left:0; right:0; bottom:0; height:0%; z-index:calc(var(--z-top) - 1);
-    background:
-      repeating-linear-gradient(90deg, var(--curtain-a) 0 34px, var(--curtain-b) 34px 68px),
-      linear-gradient(180deg, rgba(0,0,0,.35), rgba(0,0,0,0) 18%);
-    box-shadow: 0 -14px 26px -12px rgba(0,0,0,.55) inset;
+    background: var(--curtain-solid);
+    box-shadow: 0 -14px 26px -12px rgba(0,0,0,.35) inset;
   }
   .curtain-handle{ position:absolute; left:0; right:0; top:0; height:26px; margin-top:-13px; display:flex; align-items:center; justify-content:center; cursor:ns-resize; touch-action:none; }
   .curtain-handle .rod{ width:min(94%,700px); height:9px; border-radius:4px; background:linear-gradient(180deg,var(--curtain-rod),#8A867B); box-shadow:0 2px 6px rgba(0,0,0,.4); display:flex; align-items:center; justify-content:center; }
